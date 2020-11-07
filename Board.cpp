@@ -3,15 +3,25 @@
 Board::Board()
 {
 	memset(board, 0, sizeof(board));
-
 }
 
 Board::Result Board::Move(Board::OP op)
 {
+	if (gameOver)return Board::kGameOver;
+
+	if (op.player == kPlayerNone)
+	{
+		if (operations.empty())op.player = kPlayerBlack;
+		else op.player = (operations.top().player == kPlayerBlack ? kPlayerWhite : kPlayerBlack);
+	}
+
 	op.result = Check(op);
 	if (op.result == kNull || op.result == kInvalid || op.result == kBan)
 		return op.result;
+
+	if (op.result == kWhiteWin || op.result == kBlackWin)gameOver = true;
 	operations.push(op);
+	board[op.x][op.y] = op.player;
 	return op.result;
 }
 
@@ -21,6 +31,11 @@ Board::Result Board::Check(const Board::OP& op)
 		return Board::kInvalid;
 
 	if (board[op.x][op.y] != 0)
+		return Board::kInvalid;
+
+	if (operations.empty() && op.player != kPlayerBlack)
+		return Board::kInvalid;
+	if (!operations.empty() && op.player == operations.top().player)
 		return Board::kInvalid;
 
 	auto win = checkWin(op);
@@ -173,5 +188,18 @@ Board::Result Board::checkWin(const Board::OP& op)
 	if (chk3 >= 2 || chk4 >= 2)return Board::Result::kBan;
 
 	return chkLong;
+}
+
+Board::OP Board::GetLatestOP()
+{
+	if (operations.empty()) return { Board::kPlayerNone, 0, 0, Board::kNull };
+	else return operations.top();
+}
+
+void Board::Reset()
+{
+	std::stack<OP>().swap(operations);
+	memset(board, 0, sizeof(board));
+	this->gameOver = false;
 }
 

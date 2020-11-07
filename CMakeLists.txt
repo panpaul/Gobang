@@ -34,13 +34,16 @@ if (ANDROID)
             main.cpp
             mainwindow.cpp mainwindow.h mainwindow.ui
             Board.cpp Board.h
-            ${TS_FILES}
-            )
+            Game.cpp Game.h
+            Engine.cpp Engine.h
+            ${TS_FILES})
 else ()
     add_executable(Gobang
             main.cpp
             mainwindow.cpp mainwindow.h mainwindow.ui
             Board.cpp Board.h
+            Game.cpp Game.h
+            Engine.cpp Engine.h
             ${TS_FILES})
 endif ()
 
