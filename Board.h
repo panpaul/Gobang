@@ -7,9 +7,8 @@
 #ifndef GOBANG__BOARD_H_
 #define GOBANG__BOARD_H_
 
-#include <cstdint>
-#include <cstring>
-#include <stack>
+#include <QStack>
+#include <QVector>
 
 class Board
 {
@@ -40,26 +39,62 @@ class Board
 		PlayerInfo player = kPlayerBlack; ///< 操作的玩家信息
 		uint8_t x = 0, y = 0;             ///< 下棋的位置
 		Result result = kNull;            ///< 该步操作的结果
-		OP(PlayerInfo player, uint8_t x, uint8_t y, Result result)
-			: player(player), x(x), y(y), result(result)
+		double value = 0.0;               ///< 该步操作的评分
+
+		OP(PlayerInfo player, uint8_t x, uint8_t y, Result result, double value)
+			: player(player), x(x), y(y), result(result), value(value)
 		{
 		};
+
+		OP() : player(kPlayerNone), x(0), y(0), result(kNull), value(0.0)
+		{
+		};
+
+		bool operator<(const OP& a) const
+		{ // 降序排列
+			return value > a.value;
+		}
+
+		bool operator==(const OP& a) const
+		{
+			return x == a.x && y == a.y && player == a.player;
+		}
 	};
 
  private:
 	static const uint8_t kBoardSize = 15;
-	std::stack<OP> operations;
+	QStack<OP> operations;
 	bool gameOver = false;
+	unsigned availableOPs = kBoardSize * kBoardSize;
+
+	const double kWin = 200.0;
+	const double kFourBonus = 60.0;
+	const double kThreeBonus = 50.0;
+	const double kLink = 1.0;
+	const double kLose = -200.0;
+	const double kFine = 1.5;
 
  public:
-	int board[kBoardSize][kBoardSize]{};
-	Result Move(OP op);
-	Result Check(const OP& op);
-	OP GetLatestOP();
-	void Reset();
+	int board[kBoardSize][kBoardSize]{}; ///< 棋盘
+
+	Result Move(OP&);         ///< 下一步棋
+	Result Check(const OP&, double&); ///< 检查当前落子合法性
+	OP Revoke();             ///< 撤回一步操作
+
+	OP GetLatestOP(); ///< 获取最后一步
+	QVector<OP> GetAvailableOPs(PlayerInfo player); ///< 过去所有可行的下法(在已下节点周围1格子范围内)
+	void Reset(); ///< 重置
+
+	static PlayerInfo ReversePlayer(PlayerInfo);
 
  private:
-	Result checkWin(const OP& op);
+	Result checkWin(const OP& op, double&);
+	double evaluateGame(const OP& op);
+	double evaluateVert_(int x, int y);
+	double evaluateHor_(int x, int y);
+	double evaluateSla_(int x, int y);
+	double evaluateBs_(int x, int y);
+
 };
 
 #endif //GOBANG__BOARD_H_

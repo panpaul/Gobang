@@ -8,6 +8,7 @@
 #define GOBANG__GAME_H_
 
 #include "Board.h"
+#include "Engine.h"
 #include <QMessageBox>
 
 class Game : QObject
@@ -18,8 +19,10 @@ class Game : QObject
 
  public:
 	std::shared_ptr<Board> board;
+	Engine* engine;
  private:
 	QWidget* mainWindow;
+	Board::PlayerInfo player;
 
 };
 

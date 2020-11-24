@@ -11,6 +11,24 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Doxygen
+FIND_PACKAGE(Doxygen)
+OPTION(BUILD_DOCUMENTATION "Create the HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
+
+IF (BUILD_DOCUMENTATION)
+    IF (NOT DOXYGEN_FOUND)
+        MESSAGE(FATAL_ERROR "Doxygen is needed to build the documentation.")
+    ENDIF ()
+
+    SET(doxyfile ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
+
+    ADD_CUSTOM_TARGET(doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM)
+ENDIF ()
+
 # QtCreator supports the following variables for Android, which are identical to qmake Android variables.
 # Check http://doc.qt.io/qt-5/deployment-android.html for more information.
 # They need to be set before the find_package(Qt5 ...) call.
@@ -33,6 +51,7 @@ if (ANDROID)
     add_library(Gobang SHARED
             main.cpp
             mainwindow.cpp mainwindow.h mainwindow.ui
+            gamewindow.cpp gamewindow.h gamewindow.h
             Board.cpp Board.h
             Game.cpp Game.h
             Engine.cpp Engine.h
@@ -41,6 +60,7 @@ else ()
     add_executable(Gobang
             main.cpp
             mainwindow.cpp mainwindow.h mainwindow.ui
+            gamewindow.cpp gamewindow.h gamewindow.ui
             Board.cpp Board.h
             Game.cpp Game.h
             Engine.cpp Engine.h
