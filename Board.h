@@ -7,8 +7,9 @@
 #ifndef GOBANG__BOARD_H_
 #define GOBANG__BOARD_H_
 
-#include <QStack>
-#include <QVector>
+#include <stack>
+#include <vector>
+#include <cstdint>
 
 class Board
 {
@@ -63,16 +64,17 @@ class Board
 
  private:
 	static const uint8_t kBoardSize = 15;
-	QStack<OP> operations;
+	std::stack<OP> operations;
 	bool gameOver = false;
 	unsigned availableOPs = kBoardSize * kBoardSize;
 
-	const double kWin = 200.0;
-	const double kFourBonus = 60.0;
-	const double kThreeBonus = 50.0;
-	const double kLink = 1.0;
-	const double kLose = -200.0;
-	const double kFine = 1.5;
+	const double kWin = 750.0;       // 胜利分值
+	const double kFourBonus = 80.0;  // 四连奖励
+	const double kThreeBonus = 50.0; // 三连奖励
+	const double kLink = 1.0;        // 连子系数
+	const double kLose = 0.0;     // 失败分值
+	const double kFine = 1.0;        // 负分惩罚
+	const double kBlockBonus = 2.5;  // 封锁对方走步奖励
 
  public:
 	int board[kBoardSize][kBoardSize]{}; ///< 棋盘
@@ -82,14 +84,16 @@ class Board
 	OP Revoke();             ///< 撤回一步操作
 
 	OP GetLatestOP(); ///< 获取最后一步
-	QVector<OP> GetAvailableOPs(PlayerInfo player); ///< 过去所有可行的下法(在已下节点周围1格子范围内)
+	std::vector<OP> GetAvailableOPs(PlayerInfo player); ///< 过去所有可行的下法(在已下节点周围1格子范围内)
 	void Reset(); ///< 重置
 
 	static PlayerInfo ReversePlayer(PlayerInfo);
 
  private:
+	// TODO 重写
 	Result checkWin(const OP& op, double&);
 	double evaluateGame(const OP& op);
+	// TODO 以下四个函数合并重写
 	double evaluateVert_(int x, int y);
 	double evaluateHor_(int x, int y);
 	double evaluateSla_(int x, int y);

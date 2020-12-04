@@ -3,7 +3,8 @@
 
 #include <algorithm>
 #include <random>
-#include <utility>
+#include <iostream>
+#include <iomanip>
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -18,10 +19,10 @@ Engine::Engine(std::shared_ptr<Board> board, Board::PlayerInfo ai)
 double Engine::ucb(Engine::Node* node)
 {
 	// 归一化
-	double reward = (node->reward + 200) / 400;
+	double reward = node->reward / 750;
 	if (reward < 0)
 		reward = 0;
-	return reward + UCB_C * sqrt(2 * log(node->parent->numVisits) / node->numVisits);
+	return reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
 }
 
 bool Engine::Node::operator<(Node* node) const
@@ -29,8 +30,42 @@ bool Engine::Node::operator<(Node* node) const
 	return ucb(const_cast<Node*>(this)) < ucb(node);
 }
 
+void debug(Engine::Node* r)
+{
+	double x[15][15] = {{ 0 }};
+	for (auto& y:r->child)
+		x[y->op.x][y->op.y] = y->op.value;
+	for (int j = 0; j < 15; j++)
+	{
+		for (auto& i : x)
+		{
+			std::cout << std::setw(3) << std::setfill(' ') << i[j] << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+}
+
 Board::OP Engine::Search()
 {
+	// 优先使用特殊判定: 三连、四连
+	auto scores = board->GetAvailableOPs(board->GetLatestOP().player);
+	if (!scores.empty() && scores[0].value > 300)
+	{
+		qDebug() << "Executed by Rules with score:" << scores[0].value;
+		auto op = scores[0];
+		op.player = board->ReversePlayer(op.player);
+		op.value = 0;
+		op.result = Board::kNull;
+
+		// 防止禁手
+		double val = 0;
+		auto valid = board->Check(op, val);
+
+		if (valid != Board::kBan && valid != Board::kGameOver && valid != Board::kInvalid)
+			return op;
+	}
+
 	this->Root->op = board->GetLatestOP();
 	this->Root->parent = nullptr;
 	this->Root->numVisits = 0;
@@ -55,6 +90,8 @@ Board::OP Engine::Search()
 	// TODO 性能优化，不一定每次重新计算
 	Destroy(Root);
 
+	qDebug() << "Executed by MCTS with score:" << op.value;
+
 	return op;
 }
 
@@ -72,8 +109,6 @@ void Engine::Execute()
 
 	while (PopTimes--)
 		board->Revoke();
-
-	return; // for breakpoint
 }
 
 Engine::Node* Engine::SelectNode(Engine::Node* node)
@@ -130,7 +165,7 @@ Engine::Node* Engine::Expand(Engine::Node* node)
 		auto* child = new Node;
 		child->parent = node;
 		child->op = op;
-		child->reward = 0;
+		child->reward = op.value;
 		child->fullExpanded = false;
 		child->numVisits = 0;
 
@@ -157,15 +192,15 @@ double Engine::Simulation(Engine::Node* node)
 	board->Move(node->op);
 	PopTimes++;
 
-	Node* child = GetBestChild(node);
+	Node* child = GetRandomChild(node);
 	if (child == nullptr)return 0;
 
 	// 开始放飞自我
 	auto op = child->op;
 	auto player = child->op.player;
 	auto ops = board->GetAvailableOPs(Board::ReversePlayer(player));
-	double value;
-	while (true)
+	double value = 0;
+	for (int i = 0; i < SimulationMaxDepth; i++)
 	{
 		// 保存孩子节点现场
 		board->Move(op);
@@ -174,20 +209,19 @@ double Engine::Simulation(Engine::Node* node)
 		// 更新
 		player = Board::ReversePlayer(player);
 		ops = board->GetAvailableOPs(player);
+		//value = op.value;
+
 		if (ops.empty())
 		{
-			// 结束了
 			player = Board::ReversePlayer(player);
-			value = op.value;
 			break;
 		}
+
 		op = ops[0];
+		value = op.value;
+
 		if (op.result != Board::kNoError)
-		{
-			// 结束了
-			value = op.value;
 			break;
-		}
 	}
 
 	if (node->op.player != player)value = -value;
@@ -235,7 +269,8 @@ void Engine::Destroy(Engine::Node*& node)
 	while (!node->child.empty())
 	{
 		Destroy(node->child.front());
-		node->child.pop_front();
+		node->child.erase(node->child.begin());
+		//node->child.pop_front();
 	}
 	node->parent = nullptr;
 	delete node;

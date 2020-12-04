@@ -14,8 +14,19 @@
 class Game : QObject
 {
  public:
+	enum GameType
+	{
+		kGameHumanComputer,
+		kGameHH,
+		kGameComputerHuman,
+		kGameCC
+	};
+
 	explicit Game(QWidget* window);
+	Game(QWidget* window, GameType version);
 	void Invoke(Board::OP);
+	void Next();
+	void Reset();
 
  public:
 	std::shared_ptr<Board> board;
@@ -23,6 +34,8 @@ class Game : QObject
  private:
 	QWidget* mainWindow;
 	Board::PlayerInfo player;
+	bool secondEnd = false;
+	GameType version;
 
 };
 

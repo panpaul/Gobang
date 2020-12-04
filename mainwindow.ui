@@ -6,39 +6,83 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>800</width>
-                <height>600</height>
+                <width>230</width>
+                <height>200</height>
             </rect>
         </property>
+        <property name="minimumSize">
+            <size>
+                <width>230</width>
+                <height>200</height>
+            </size>
+        </property>
+        <property name="maximumSize">
+            <size>
+                <width>230</width>
+                <height>200</height>
+            </size>
+        </property>
         <property name="windowTitle">
-            <string>MainWindow</string>
+            <string>五子棋</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <widget class="QPushButton" name="playButton">
+            <widget class="QWidget" name="">
                 <property name="geometry">
                     <rect>
-                        <x>240</x>
-                        <y>280</y>
-                        <width>93</width>
-                        <height>28</height>
+                        <x>10</x>
+                        <y>10</y>
+                        <width>211</width>
+                        <height>181</height>
                     </rect>
                 </property>
-                <property name="text">
-                    <string>Play</string>
-                </property>
+                <layout class="QVBoxLayout" name="verticalLayout">
+                    <property name="sizeConstraint">
+                        <enum>QLayout::SetDefaultConstraint</enum>
+                    </property>
+                    <item alignment="Qt::AlignHCenter">
+                        <widget class="QLabel" name="label">
+                            <property name="font">
+                                <font>
+                                    <family>思源黑体</family>
+                                    <pointsize>16</pointsize>
+                                </font>
+                            </property>
+                            <property name="text">
+                                <string>五子棋</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="playHC">
+                            <property name="text">
+                                <string>Human VS Computer</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="playHH">
+                            <property name="text">
+                                <string>Human VS Human</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="playCH">
+                            <property name="text">
+                                <string>Computer VS Human</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="playCC">
+                            <property name="text">
+                                <string>Computer VS Computer</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
             </widget>
         </widget>
-        <widget class="QMenuBar" name="menubar">
-            <property name="geometry">
-                <rect>
-                    <x>0</x>
-                    <y>0</y>
-                    <width>800</width>
-                    <height>26</height>
-                </rect>
-            </property>
-        </widget>
-        <widget class="QStatusBar" name="statusbar"/>
     </widget>
     <resources/>
     <connections/>

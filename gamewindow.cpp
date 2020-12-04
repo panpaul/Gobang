@@ -9,11 +9,26 @@ GameWindow::GameWindow(QWidget* parent) :
 	QMainWindow(parent),
 	ui(new Ui::GameWindow)
 {
-	ui->setupUi(this);
-	this->game = std::make_shared<Game>(this);
-	this->board = game->board;
+	this->gameType = Game::kGameHumanComputer;
+	setup();
+}
 
+GameWindow::GameWindow(QWidget* parent, Game::GameType type) :
+	QMainWindow(parent),
+	ui(new Ui::GameWindow)
+{
+	this->gameType = type;
+	setup();
+}
+
+void GameWindow::setup()
+{
 	ui->setupUi(this);
+
+	this->game = std::make_shared<Game>(this, gameType);
+	this->board = game->board;
+	this->allowDraw = true;
+
 	this->setFixedSize(border * 2 + boxWidth * 14, border * 2 + boxWidth * 14);
 	this->setMouseTracking(true);
 	this->centralWidget()->setMouseTracking(true);
@@ -26,8 +41,13 @@ GameWindow::~GameWindow()
 
 void GameWindow::paintEvent(QPaintEvent*)
 {
-	if (!allowDraw)return;
+	paintLine();
+	paintMouse();
+	if (allowDraw)paintChess();
+}
 
+void GameWindow::paintLine()
+{
 	QPainter painter(this);
 
 	/* 画格子 */
@@ -39,6 +59,35 @@ void GameWindow::paintEvent(QPaintEvent*)
 		// 画竖线
 		painter.drawLine(border + boxWidth * i, border, border + boxWidth * i, boxWidth + boxWidth * 14);
 	}
+}
+
+void GameWindow::paintMouse()
+{
+	QPainter painter(this);
+
+	/* 画鼠标框 */
+	painter.setPen(QPen(Qt::red, 2, Qt::SolidLine));
+	if ((mouseX > border - mouseWidth && mouseX < border + boxWidth * 14 + mouseWidth)
+		&& (mouseY > border - mouseWidth && mouseY < border + boxWidth * 14 + mouseWidth)
+		)
+	{
+		painter.drawLine(mouseX - mouseWidth, mouseY - mouseWidth, mouseX - mouseGap, mouseY - mouseWidth);
+		painter.drawLine(mouseX - mouseWidth, mouseY - mouseWidth, mouseX - mouseWidth, mouseY - mouseGap);
+
+		painter.drawLine(mouseX - mouseWidth, mouseY + mouseWidth, mouseX - mouseGap, mouseY + mouseWidth);
+		painter.drawLine(mouseX - mouseWidth, mouseY + mouseWidth, mouseX - mouseWidth, mouseY + mouseGap);
+
+		painter.drawLine(mouseX + mouseWidth, mouseY + mouseWidth, mouseX + mouseGap, mouseY + mouseWidth);
+		painter.drawLine(mouseX + mouseWidth, mouseY + mouseWidth, mouseX + mouseWidth, mouseY + mouseGap);
+
+		painter.drawLine(mouseX + mouseWidth, mouseY - mouseWidth, mouseX + mouseGap, mouseY - mouseWidth);
+		painter.drawLine(mouseX + mouseWidth, mouseY - mouseWidth, mouseX + mouseWidth, mouseY - mouseGap);
+	}
+}
+
+void GameWindow::paintChess()
+{
+	QPainter painter(this);
 
 	/* 画棋子 */
 	painter.setPen(QPen(Qt::black, 2, Qt::SolidLine));
@@ -73,26 +122,6 @@ void GameWindow::paintEvent(QPaintEvent*)
 		painter.drawLine(border + op.x * boxWidth, border - crossLen + op.y * boxWidth,
 			border + op.x * boxWidth, border + crossLen + op.y * boxWidth);
 	}
-
-	/* 画鼠标框 */
-	painter.setPen(QPen(Qt::red, 2, Qt::SolidLine));
-	if ((mouseX > border - mouseWidth && mouseX < border + boxWidth * 14 + mouseWidth)
-		&& (mouseY > border - mouseWidth && mouseY < border + boxWidth * 14 + mouseWidth)
-		)
-	{
-		painter.drawLine(mouseX - mouseWidth, mouseY - mouseWidth, mouseX - mouseGap, mouseY - mouseWidth);
-		painter.drawLine(mouseX - mouseWidth, mouseY - mouseWidth, mouseX - mouseWidth, mouseY - mouseGap);
-
-		painter.drawLine(mouseX - mouseWidth, mouseY + mouseWidth, mouseX - mouseGap, mouseY + mouseWidth);
-		painter.drawLine(mouseX - mouseWidth, mouseY + mouseWidth, mouseX - mouseWidth, mouseY + mouseGap);
-
-		painter.drawLine(mouseX + mouseWidth, mouseY + mouseWidth, mouseX + mouseGap, mouseY + mouseWidth);
-		painter.drawLine(mouseX + mouseWidth, mouseY + mouseWidth, mouseX + mouseWidth, mouseY + mouseGap);
-
-		painter.drawLine(mouseX + mouseWidth, mouseY - mouseWidth, mouseX + mouseGap, mouseY - mouseWidth);
-		painter.drawLine(mouseX + mouseWidth, mouseY - mouseWidth, mouseX + mouseWidth, mouseY - mouseGap);
-	}
-
 }
 
 void GameWindow::mouseMoveEvent(QMouseEvent* event)
@@ -100,11 +129,19 @@ void GameWindow::mouseMoveEvent(QMouseEvent* event)
 	mouseX = event->x();
 	mouseY = event->y();
 
+	this->game->Next();
+
 	this->update();
 }
 
 void GameWindow::mouseReleaseEvent(QMouseEvent* event)
 {
+	if (gameType == Game::kGameCC)
+	{
+		this->game->Reset();
+		return;
+	}
+
 	int x = event->x();
 	int y = event->y();
 
@@ -130,6 +167,5 @@ void GameWindow::mouseReleaseEvent(QMouseEvent* event)
 
 		this->update();
 	}
-
 }
 

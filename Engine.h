@@ -11,7 +11,7 @@
 
 #include <cmath>
 #include <memory>
-#include <QVector>
+#include <vector>
 
 class Engine
 {
@@ -25,7 +25,7 @@ class Engine
 		double reward;        ///< 当前节点价值
 
 		Node* parent;             ///< 父节点
-		QVector<Node*> child;     ///< 孩子节点
+		std::vector<Node*> child;     ///< 孩子节点
 
 		bool operator<(Node*) const;
 
@@ -46,7 +46,8 @@ class Engine
 	Node* Root;
 
 	static constexpr double UCB_C = 1.414;
-	const int ExecuteTimes = 500;
+	const int ExecuteTimes = 1000;
+	const int SimulationMaxDepth = 15;
 	int PopTimes = 0;
 
  public:

@@ -19,7 +19,13 @@ class MainWindow : public QMainWindow
 	~MainWindow() override;
 
  private slots:
-	void on_playButton_clicked();
+	void on_playHC_clicked();
+
+	void on_playCH_clicked();
+
+	void on_playCC_clicked();
+
+	void on_playHH_clicked();
 
  private:
 	Ui::MainWindow* ui;

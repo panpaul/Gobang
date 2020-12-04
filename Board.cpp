@@ -45,13 +45,14 @@ Board::Result Board::Check(const Board::OP& op, double& value)
 
 	if (operations.empty() && op.player != kPlayerBlack)
 		return Board::kInvalid;
-	if (!operations.empty() && op.player == operations.top().player)
-		return Board::kInvalid;
+	//if (!operations.empty() && op.player == operations.top().player)
+	//	return Board::kInvalid;
 
 	double val = 0;
 	auto win = checkWin(op, val);
 	value += val;
 	value += evaluateGame(op);
+	if (value >= 740)value = 740;
 
 	if (win == kBan
 		|| (win == kBlackWin && op.player != kPlayerBlack)
@@ -233,15 +234,15 @@ Board::OP Board::GetLatestOP()
 
 void Board::Reset()
 {
-	QStack<OP>().swap(operations);
+	std::stack<OP>().swap(operations);
 	memset(board, 0, sizeof(board));
 	availableOPs = kBoardSize * kBoardSize;
 	this->gameOver = false;
 }
 
-QVector<Board::OP> Board::GetAvailableOPs(Board::PlayerInfo player)
+std::vector<Board::OP> Board::GetAvailableOPs(Board::PlayerInfo player)
 {
-	QVector<Board::OP> ops;
+	std::vector<Board::OP> ops;
 
 	if (gameOver)return ops;
 
@@ -307,130 +308,121 @@ double Board::evaluateGame(const OP& op)
 {
 	// 时间复杂度+++++
 
-	// 备份棋盘
-	int board_copy[kBoardSize][kBoardSize];
-	memcpy(board_copy, board, sizeof(board));
+	int backup = board[op.x][op.y];
+	board[op.x][op.y] = op.player;
 
-	double point = 0;
-	for (int i = 0; i < kBoardSize; i++)
-	{
-		for (int j = 0; j < kBoardSize; j++)
-		{
-			if (board[i][j] == kPlayerNone
-				|| board[i][j] == kPlayerBlack + 2
-				|| board[i][j] == kPlayerWhite + 2)
-				continue;
+	double points = 0;
 
-			double subPoint = 0;
-			double coefficient = 1;
-			if (board[i][j] != op.player)coefficient = -kFine;
-			subPoint += evaluateVert_(i, j) * coefficient;
-			subPoint += evaluateHor_(i, j) * coefficient;
-			subPoint += evaluateSla_(i, j) * coefficient;
-			subPoint += evaluateBs_(i, j) * coefficient;
+	points += evaluateVert_(op.x, op.y);
+	points += evaluateHor_(op.x, op.y);
+	points += evaluateSla_(op.x, op.y);
+	points += evaluateBs_(op.x, op.y);
 
-			point += subPoint;
-		}
-	}
+	board[op.x][op.y] = backup;
 
-	// 还原
-	memcpy(board, board_copy, sizeof(board));
+	return points;
+}
 
-	return point;
+#define eva_head_ int cnt = 0; \
+    auto player = static_cast<PlayerInfo>(board[x][y]); \
+    int side1x = kBoardSize + 1, side1y = kBoardSize + 1, \
+        side2x = kBoardSize + 1, side2y = kBoardSize + 1;
+
+#define eva_tail_ double bonus = 0;\
+    if (cnt == 1)\
+    {\
+        int cnt3 = cnt1 + cnt2;\
+        if (side1x != kBoardSize + 1 && side1y != kBoardSize + 1 && \
+            side2x != kBoardSize + 1 && side2y != kBoardSize + 1) \
+            cnt3--;\
+        if (cnt3 <= 0)bonus = 0;\
+        else if (cnt3 < 3)bonus = cnt3 * kLink;\
+        else if (cnt3 == 3)bonus = 3 * kThreeBonus;\
+        else if (cnt3 > 3)bonus = cnt3 * kFourBonus;\
+    }\
+    bonus *= kBlockBonus;\
+    double self = 0;               \
+    if (cnt >= 5)self = kWin;\
+    if (cnt == 4)self = 4 * kFourBonus;\
+    else if (cnt == 3)self = 3 * kThreeBonus;\
+    else self = cnt * kLink;\
+    return self + bonus;
+
+#define eva_self_(ic, jc, upd1, upd2) \
+for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd1))\
+    if (board[i][j] == player)\
+        cnt++;\
+    else\
+    {\
+        if (board[i][j] == ReversePlayer(player))\
+        {\
+            side1x = i;\
+            side1y = j;\
+        }\
+        break;\
+    }\
+for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd2))\
+    if (board[i][j] == player)\
+        cnt++;\
+    else\
+    {\
+        if (board[i][j] == ReversePlayer(player))\
+        {\
+            side2x = i;\
+            side2y = j;\
+        }\
+        break;\
+    }\
+cnt -= 1;\
+int cnt1 = 0, cnt2 = 0;\
+if (side1x != kBoardSize + 1 && side1y != kBoardSize + 1)\
+{\
+    for (int i = side1x, j = side1y; CHECK_BORDER(i) && CHECK_BORDER(j); (upd1))\
+        if (board[i][j] == ReversePlayer(player))\
+            cnt1++;\
+        else break;\
+}\
+if (side2x != kBoardSize + 1 && side2y != kBoardSize + 1)\
+{\
+    for (int i = side2x, j = side2y; CHECK_BORDER(i) && CHECK_BORDER(j); (upd2))\
+        if (board[i][j] == ReversePlayer(player))\
+            cnt2++;\
+        else break;\
 }
 
 double Board::evaluateVert_(int x, int y)
 {
-	int cnt = 0;
-	auto player = board[x][y];
+	eva_head_
 
-	for (int i = y; CHECK_BORDER(i); i++)
-		if (board[x][i] == player || board[x][i] == player + 2)
-		{
-			cnt++;
-			board[x][i] = player + 2;
-		}
-		else break;
-	for (int i = y; CHECK_BORDER(i); i--)
-		if (board[x][i] == player || board[x][i] == player + 2)
-		{
-			cnt++;
-			board[x][i] = player + 2;
-		}
-		else break;
+	eva_self_(x, y, (j++), (j--))
 
-	cnt -= 2;
-	return exp(cnt * kLink);
+	eva_tail_
 }
 
 double Board::evaluateHor_(int x, int y)
 {
-	int cnt = 0;
-	auto player = board[x][y];
+	eva_head_
 
-	for (int i = x; CHECK_BORDER(i); i++)
-		if (board[i][y] == player || board[i][y] == player + 2)
-		{
-			cnt++;
-			board[i][y] = player + 2;
-		}
-		else break;
-	for (int i = x; CHECK_BORDER(i); i--)
-		if (board[i][y] == player || board[i][y] == player + 2)
-		{
-			cnt++;
-			board[i][y] = player + 2;
-		}
-		else break;
+	eva_self_(x, y, (i++), (i--))
 
-	cnt -= 2;
-	return exp(cnt * kLink);
+	eva_tail_
+
 }
 
 double Board::evaluateSla_(int x, int y)
 {
-	int cnt = 0;
-	auto player = board[x][y];
+	eva_head_
 
-	for (int i = x, j = y; CHECK_BORDER(i) && CHECK_BORDER(j); i++, j++)
-		if (board[i][j] == player || board[i][j] == player + 2)
-		{
-			cnt++;
-			board[i][j] = player + 2;
-		}
-		else break;
-	for (int i = x, j = y; CHECK_BORDER(i) && CHECK_BORDER(j); i--, j--)
-		if (board[i][j] == player || board[i][j] == player + 2)
-		{
-			cnt++;
-			board[i][j] = player + 2;
-		}
-		else break;
+	eva_self_(x, y, (i++, j++), (i--, j--))
 
-	cnt -= 2;
-	return exp(cnt * kLink);
+	eva_tail_
 }
 
 double Board::evaluateBs_(int x, int y)
 {
-	int cnt = 0;
-	auto player = board[x][y];
+	eva_head_
 
-	for (int i = x, j = y; CHECK_BORDER(i) && CHECK_BORDER(j); i++, j--)
-		if (board[i][j] == player || board[i][j] == player + 2)
-		{
-			cnt++;
-			board[i][j] = player + 2;
-		}
-		else break;
-	for (int i = x, j = y; CHECK_BORDER(i) && CHECK_BORDER(j); i--, j++)
-		if (board[i][j] == player || board[i][j] == player + 2)
-		{
-			cnt++;
-			board[i][j] = player + 2;
-		}
-		else break;
+	eva_self_(x, y, (i++, j--), (i--, j++))
 
-	cnt -= 2;
-	return exp(cnt * kLink);
+	eva_tail_
 }
