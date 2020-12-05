@@ -323,7 +323,7 @@ double Board::evaluateGame(const OP& op)
 	return points;
 }
 
-#define eva_head_ int cnt = 0; \
+#define eva_head_ double cnt = 0; \
     auto player = static_cast<PlayerInfo>(board[x][y]); \
     int side1x = kBoardSize + 1, side1y = kBoardSize + 1, \
         side2x = kBoardSize + 1, side2y = kBoardSize + 1;
@@ -331,7 +331,7 @@ double Board::evaluateGame(const OP& op)
 #define eva_tail_ double bonus = 0;\
     if (cnt == 1)\
     {\
-        int cnt3 = cnt1 + cnt2;\
+        double cnt3 = cnt1 + cnt2;\
         if (side1x != kBoardSize + 1 && side1y != kBoardSize + 1 && \
             side2x != kBoardSize + 1 && side2y != kBoardSize + 1) \
             cnt3--;\
@@ -358,6 +358,7 @@ for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd1))\
         {\
             side1x = i;\
             side1y = j;\
+            cnt -= 0.5;\
         }\
         break;\
     }\
@@ -370,6 +371,7 @@ for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd2))\
         {\
             side2x = i;\
             side2y = j;\
+            cnt -= 0.5;\
         }\
         break;\
     }\
