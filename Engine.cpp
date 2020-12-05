@@ -50,7 +50,7 @@ Board::OP Engine::Search()
 {
 	// 优先使用特殊判定: 三连、四连
 	auto scores = board->GetAvailableOPs(board->GetLatestOP().player);
-	if (!scores.empty() && scores[0].value > 300)
+	if (!scores.empty() && scores[0].value > 420)
 	{
 		qDebug() << "Executed by Rules with score:" << scores[0].value;
 		auto op = scores[0];
