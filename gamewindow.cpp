@@ -156,8 +156,6 @@ void GameWindow::mouseReleaseEvent(QMouseEvent* event)
 
 	if (mouseX > minX && mouseX < maxX && mouseY > minY && mouseY < maxY)
 	{
-		qDebug() << "New Move (x,y) = (" << x << "," << y << ")";
-
 		allowDraw = false;
 
 		Board::OP op(Board::kPlayerNone, x, y, Board::kNull, 0);

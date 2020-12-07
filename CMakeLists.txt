@@ -69,4 +69,13 @@ endif ()
 
 target_link_libraries(Gobang PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
+
+# Hide Console
+IF (MSVC)
+    SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES
+            WIN32_EXECUTABLE YES
+            LINK_FLAGS "/ENTRY:mainCRTStartup"
+            )
+ENDIF ()
+
 qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})

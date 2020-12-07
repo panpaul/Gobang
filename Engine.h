@@ -36,7 +36,6 @@ class Engine
 			numVisits = 0;
 			reward = 0;
 			parent = nullptr;
-			//child = QVector<Node*>();
 		}
 	};
 
@@ -46,14 +45,15 @@ class Engine
 	Node* Root;
 
 	static constexpr double UCB_C = 1.414;
-	const int ExecuteTimes = 1000;
-	const int SimulationMaxDepth = 15;
+	const int ExecuteTimes = 4000;
+	const int SimulationMaxDepth = 20;
 	int PopTimes = 0;
 
  public:
 	explicit Engine(std::shared_ptr<Board>, Board::PlayerInfo);
 	~Engine();
 	Board::OP Search();
+	bool mcts = false;
 
  private:
 	/**
@@ -62,6 +62,10 @@ class Engine
 	 * @return 该节点的ucb值
 	 */
 	static double ucb(Node*);
+
+	/**
+	 * @brief 循环执行
+	 */
 	void Execute();
 
 	/**
@@ -100,7 +104,18 @@ class Engine
 	 */
 	static Node* GetBestChild(Node*);
 
+	/**
+	 * @brief 随机选取一个孩子节点
+	 * @param 给定的节点
+	 * @return 随机选的子节点
+	 */
 	static Node* GetRandomChild(Node*);
+
+	/**
+	 * @brief 对孩子节点的reward进行归一化
+	 * @param 给定的节点
+	 */
+	static void Normalize(Node*);
 
 	void Destroy(Node*&);
 

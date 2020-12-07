@@ -18,11 +18,7 @@ Engine::Engine(std::shared_ptr<Board> board, Board::PlayerInfo ai)
 
 double Engine::ucb(Engine::Node* node)
 {
-	// 归一化
-	double reward = node->reward / 750;
-	if (reward < 0)
-		reward = 0;
-	return reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
+	return node->reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
 }
 
 bool Engine::Node::operator<(Node* node) const
@@ -34,12 +30,12 @@ void debug(Engine::Node* r)
 {
 	double x[15][15] = {{ 0 }};
 	for (auto& y:r->child)
-		x[y->op.x][y->op.y] = y->op.value;
+		x[y->op.x][y->op.y] = y->reward;
 	for (int j = 0; j < 15; j++)
 	{
 		for (auto& i : x)
 		{
-			std::cout << std::setw(3) << std::setfill(' ') << i[j] << " ";
+			std::cout << std::setw(5) << std::setfill(' ') << std::setprecision(2) << i[j] << " ";
 		}
 		std::cout << std::endl;
 	}
@@ -48,13 +44,39 @@ void debug(Engine::Node* r)
 
 Board::OP Engine::Search()
 {
+	mcts = false;
+
+	qDebug() << "(" << board->GetLatestOP().x << "," << board->GetLatestOP().y << ") Executed by User";
+
 	// 优先使用特殊判定: 三连、四连
 	auto scores = board->GetAvailableOPs(board->GetLatestOP().player);
-	if (!scores.empty() && scores[0].value > 420)
+	auto selfScores = board->GetAvailableOPs(Board::ReversePlayer(board->GetLatestOP().player));
+
+	if (!scores.empty() && !selfScores.empty())
 	{
-		qDebug() << "Executed by Rules with score:" << scores[0].value;
-		auto op = scores[0];
-		op.player = board->ReversePlayer(op.player);
+		qDebug() << "\tRules: Self->" << selfScores[0].value << " Enemy->" << scores[0].value;
+		auto op = Board::OP{ Board::kPlayerNone, 0, 0, Board::kNull, 0 };
+		bool rule = false;
+		if (selfScores[0].value >= Board::kWin - 20)
+		{
+			rule = true;
+			op = selfScores[0];
+			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Self) with score:" << op.value << "\n";
+		}
+		else if (scores[0].value >= 400060)
+		{
+			rule = true;
+			op = scores[0];
+			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Enemy) with score:" << op.value << "\n";
+		}
+		else if (selfScores[0].value >= 400060)
+		{
+			rule = true;
+			op = selfScores[0];
+			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Self) with score:" << op.value << "\n";
+		}
+
+		op.player = board->ReversePlayer(board->GetLatestOP().player);
 		op.value = 0;
 		op.result = Board::kNull;
 
@@ -62,7 +84,7 @@ Board::OP Engine::Search()
 		double val = 0;
 		auto valid = board->Check(op, val);
 
-		if (valid != Board::kBan && valid != Board::kGameOver && valid != Board::kInvalid)
+		if (rule && valid != Board::kBan && valid != Board::kGameOver && valid != Board::kInvalid)
 			return op;
 	}
 
@@ -80,6 +102,7 @@ Board::OP Engine::Search()
 		Execute();
 
 	// 获取最优节点
+	Normalize(Root);
 	auto* child = GetBestChild(Root);
 	assert(child != nullptr);
 	auto op = child->op;
@@ -87,10 +110,11 @@ Board::OP Engine::Search()
 	// 还原用户走子
 	board->Move(this->Root->op);
 
+	qDebug() << "(" << op.x << "," << op.y << ") Executed by MCTS with score:" << op.value << "\n";
+	mcts = true;
+
 	// TODO 性能优化，不一定每次重新计算
 	Destroy(Root);
-
-	qDebug() << "Executed by MCTS with score:" << op.value;
 
 	return op;
 }
@@ -280,4 +304,24 @@ void Engine::Destroy(Engine::Node*& node)
 Engine::~Engine()
 {
 	Destroy(Root);
+}
+
+void Engine::Normalize(Engine::Node* node)
+{
+	double normalizeMin = Board::kWin;
+	double normalizeMax = 0;
+
+	for (auto& n:node->child)
+	{
+		normalizeMax = std::max(n->reward, normalizeMax);
+		normalizeMin = std::min(n->reward, normalizeMin);
+	}
+
+	if (normalizeMin == normalizeMax)
+		for (auto& c : node->child)
+			c->reward = 0.5;
+	else
+		for (auto& c : node->child)
+			c->reward = (c->reward - normalizeMin) / (normalizeMax - normalizeMin);
+
 }

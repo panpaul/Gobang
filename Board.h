@@ -68,13 +68,15 @@ class Board
 	bool gameOver = false;
 	unsigned availableOPs = kBoardSize * kBoardSize;
 
-	const double kWin = 750.0;       // 胜利分值
-	const double kFourBonus = 80.0;  // 四连奖励
-	const double kThreeBonus = 50.0; // 三连奖励
-	const double kLink = 1.0;        // 连子系数
-	const double kLose = 0.0;     // 失败分值
-	const double kFine = 1.0;        // 负分惩罚
-	const double kBlockBonus = 2.5;  // 封锁对方走步奖励
+ private:
+	const double kFourBonus = 1e5;       // 活四奖励
+	const double kFourBlockBonus = 1e4;  // 死四奖励
+	const double kThreeBonus = 1e3;      // 活三奖励
+	const double kThreeBlockBonus = 1e2; // 死三奖励
+	const double kLink = 20;             // 连子系数
+	const double kLose = 0.0;            // 失败分值
+ public:
+	constexpr static double kWin = 1e7;             // 胜利分值
 
  public:
 	int board[kBoardSize][kBoardSize]{}; ///< 棋盘
@@ -85,19 +87,13 @@ class Board
 
 	OP GetLatestOP(); ///< 获取最后一步
 	std::vector<OP> GetAvailableOPs(PlayerInfo player); ///< 过去所有可行的下法(在已下节点周围1格子范围内)
+	unsigned GetAvailableOPs() const;
 	void Reset(); ///< 重置
 
 	static PlayerInfo ReversePlayer(PlayerInfo);
 
  private:
-	// TODO 重写
 	Result checkWin(const OP& op, double&);
-	double evaluateGame(const OP& op);
-	// TODO 以下四个函数合并重写
-	double evaluateVert_(int x, int y);
-	double evaluateHor_(int x, int y);
-	double evaluateSla_(int x, int y);
-	double evaluateBs_(int x, int y);
 
 };
 

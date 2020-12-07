@@ -36,6 +36,7 @@ class Game : QObject
 	Board::PlayerInfo player;
 	bool secondEnd = false;
 	GameType version;
+	int statistic = 0, times = 0;
 
 };
 

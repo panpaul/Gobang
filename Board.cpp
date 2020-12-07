@@ -11,6 +11,18 @@ Board::Board()
 	memset(board, 0, sizeof(board));
 }
 
+Board::PlayerInfo Board::ReversePlayer(Board::PlayerInfo p)
+{
+	if (p == kPlayerWhite)return kPlayerBlack;
+	if (p == kPlayerBlack)return kPlayerWhite;
+	return Board::kPlayerNone;
+}
+
+unsigned Board::GetAvailableOPs() const
+{
+	return availableOPs;
+}
+
 Board::Result Board::Move(Board::OP& op)
 {
 	if (gameOver || availableOPs == 0)return Board::kGameOver;
@@ -35,6 +47,20 @@ Board::Result Board::Move(Board::OP& op)
 	return op.result;
 }
 
+Board::OP Board::GetLatestOP()
+{
+	if (operations.empty()) return { Board::kPlayerNone, 0, 0, Board::kNull, 0.0 };
+	else return operations.top();
+}
+
+void Board::Reset()
+{
+	std::stack<OP>().swap(operations);
+	memset(board, 0, sizeof(board));
+	availableOPs = kBoardSize * kBoardSize;
+	this->gameOver = false;
+}
+
 Board::Result Board::Check(const Board::OP& op, double& value)
 {
 	if (op.x > kBoardSize - 1 || op.y > kBoardSize)
@@ -54,7 +80,7 @@ Board::Result Board::Check(const Board::OP& op, double& value)
 	board[op.x][op.y] = kPlayerNone;
 	value += val;
 	//value += evaluateGame(op);
-	if (value >= 740)value = 740;
+	if (value >= kWin)value = kWin - kLink;
 
 	if (win == kBan
 		|| (win == kBlackWin && op.player != kPlayerBlack)
@@ -131,13 +157,13 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 	  }
 	  if (op.player == kPlayerBlack)
 		  chk3 += ban3;
-	  double tmp = std::max(score[0], score[1]);
-	  tmp = std::max(tmp, score[2]);
-	  tmpScore += kThreeBonus * tmp;
-
+	  double tmp = std::max(score[1], score[2]) * kThreeBlockBonus;
+	  tmp = std::max(tmp, score[0] * kThreeBonus);
+	  tmpScore += tmp;
 
 	  /* 检查四四禁手 */
 	  bool ban4 = false;
+	  score[0] = score[1] = score[2] = 0;
 	  if (cnt1 + cnt2 - 1 >= 4) /* 活四 */
 	  {
 		  ban4 = true;
@@ -155,11 +181,12 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 	  }
 	  if (op.player == kPlayerBlack)
 		  chk4 += ban4;
-	  tmp = std::max(score[0], score[1]);
-	  tmp = std::max(tmp, score[2]);
-	  tmpScore += kFourBonus * tmp;
+	  tmp = std::max(score[1], score[2]) * kFourBlockBonus;
+	  tmp = std::max(tmp, score[0] * kFourBonus);
+	  tmpScore = std::max(tmpScore, tmp);
+	  //tmpScore += tmp;
 
-	  if (tmpScore < 20 || cnt1 + cnt2 - 1 < 3)
+	  if (tmpScore < 3 * kThreeBlockBonus || cnt1 + cnt2 - 1 < 3)
 		  tmpScore += kLink * (cnt1 + cnt2 - 1);
 
 	  /* 检查输赢 */
@@ -171,15 +198,15 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 		  if (op.player == kPlayerWhite)
 			  tmpResult = kWhiteWin;
 		  else
+		  {
+			  tmpResult = kBlackWin;
 			  chkLong = kBlackWin;
+		  }
 	  }
-	  if (result != kWhiteWin && result != kBan)result = tmpResult;
+	  if (result != kWhiteWin && result != kBlackWin && result != kBan)result = tmpResult;
 
 	  /* 评分 */
-	  if (op.player == kPlayerWhite && tmpResult == kWhiteWin)
-		  point = kWin;
-	  else if (point != kWin)
-		  point += tmpScore;
+	  point += tmpScore;
 	};
 
 	// check vertical(|)
@@ -228,7 +255,7 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 		return kWhiteWin;
 	}
 
-	if (chk3 >= 2 || chk4 >= 2 || result == kBan)
+	if ((chk3 >= 2 || chk4 >= 2 || result == kBan) && result != kBlackWin)
 	{
 		value = kLose;
 		return kBan;
@@ -244,20 +271,6 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 		value = point;
 		return kNoError;
 	}
-}
-
-Board::OP Board::GetLatestOP()
-{
-	if (operations.empty()) return { Board::kPlayerNone, 0, 0, Board::kNull, 0.0 };
-	else return operations.top();
-}
-
-void Board::Reset()
-{
-	std::stack<OP>().swap(operations);
-	memset(board, 0, sizeof(board));
-	availableOPs = kBoardSize * kBoardSize;
-	this->gameOver = false;
 }
 
 std::vector<Board::OP> Board::GetAvailableOPs(Board::PlayerInfo player)
@@ -315,136 +328,4 @@ Board::OP Board::Revoke()
 		this->gameOver = false;
 	}
 	return op;
-}
-
-Board::PlayerInfo Board::ReversePlayer(Board::PlayerInfo p)
-{
-	if (p == kPlayerWhite)return kPlayerBlack;
-	if (p == kPlayerBlack)return kPlayerWhite;
-	return Board::kPlayerNone;
-}
-
-double Board::evaluateGame(const OP& op)
-{
-	// 时间复杂度+++++
-
-	int backup = board[op.x][op.y];
-	board[op.x][op.y] = op.player;
-
-	double points = 0;
-
-	points += evaluateVert_(op.x, op.y);
-	points += evaluateHor_(op.x, op.y);
-	points += evaluateSla_(op.x, op.y);
-	points += evaluateBs_(op.x, op.y);
-
-	board[op.x][op.y] = backup;
-
-	return points;
-}
-
-#define eva_head_ double cnt = 0; \
-    auto player = static_cast<PlayerInfo>(board[x][y]); \
-    int side1x = kBoardSize + 1, side1y = kBoardSize + 1, \
-        side2x = kBoardSize + 1, side2y = kBoardSize + 1;
-
-#define eva_tail_ double bonus = 0;\
-    if (cnt == 1)\
-    {\
-        double cnt3 = cnt1 + cnt2;\
-        if (side1x != kBoardSize + 1 && side1y != kBoardSize + 1 && \
-            side2x != kBoardSize + 1 && side2y != kBoardSize + 1) \
-            cnt3--;\
-        if (cnt3 <= 0)bonus = 0;\
-        else if (cnt3 < 3)bonus = cnt3 * kLink;\
-        else if (cnt3 == 3)bonus = 3 * kThreeBonus;\
-        else if (cnt3 > 3)bonus = cnt3 * kFourBonus;\
-    }\
-    bonus *= kBlockBonus;\
-    double self = 0;               \
-    if (cnt >= 5)self = kWin;\
-    if (cnt == 4)self = 4 * kFourBonus;\
-    else if (cnt == 3)self = 3 * kThreeBonus;\
-    else self = cnt * kLink;\
-    return self + bonus;
-
-#define eva_self_(ic, jc, upd1, upd2) \
-for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd1))\
-    if (board[i][j] == player)\
-        cnt++;\
-    else\
-    {\
-        if (board[i][j] == ReversePlayer(player))\
-        {\
-            side1x = i;\
-            side1y = j;\
-            cnt -= 0.5;\
-        }\
-        break;\
-    }\
-for (int i = (ic), j = (jc); CHECK_BORDER(i) && CHECK_BORDER(j); (upd2))\
-    if (board[i][j] == player)\
-        cnt++;\
-    else\
-    {\
-        if (board[i][j] == ReversePlayer(player))\
-        {\
-            side2x = i;\
-            side2y = j;\
-            cnt -= 0.5;\
-        }\
-        break;\
-    }\
-cnt -= 1;\
-int cnt1 = 0, cnt2 = 0;\
-if (side1x != kBoardSize + 1 && side1y != kBoardSize + 1)\
-{\
-    for (int i = side1x, j = side1y; CHECK_BORDER(i) && CHECK_BORDER(j); (upd1))\
-        if (board[i][j] == ReversePlayer(player))\
-            cnt1++;\
-        else break;\
-}\
-if (side2x != kBoardSize + 1 && side2y != kBoardSize + 1)\
-{\
-    for (int i = side2x, j = side2y; CHECK_BORDER(i) && CHECK_BORDER(j); (upd2))\
-        if (board[i][j] == ReversePlayer(player))\
-            cnt2++;\
-        else break;\
-}
-
-double Board::evaluateVert_(int x, int y)
-{
-	eva_head_
-
-	eva_self_(x, y, (j++), (j--))
-
-	eva_tail_
-}
-
-double Board::evaluateHor_(int x, int y)
-{
-	eva_head_
-
-	eva_self_(x, y, (i++), (i--))
-
-	eva_tail_
-
-}
-
-double Board::evaluateSla_(int x, int y)
-{
-	eva_head_
-
-	eva_self_(x, y, (i++, j++), (i--, j--))
-
-	eva_tail_
-}
-
-double Board::evaluateBs_(int x, int y)
-{
-	eva_head_
-
-	eva_self_(x, y, (i++, j--), (i--, j++))
-
-	eva_tail_
 }
