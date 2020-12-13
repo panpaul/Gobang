@@ -21,13 +21,11 @@ class Engine
 		Board::OP op; ///< 当前节点的操作
 
 		bool fullExpanded;  ///< 是否被完全扩展
-		unsigned numVisits;     ///< 访问的次数
-		double reward;        ///< 当前节点价值
+		unsigned numVisits; ///< 访问的次数
+		double reward;      ///< 当前节点价值
 
-		Node* parent;             ///< 父节点
-		std::vector<Node*> child;     ///< 孩子节点
-
-		bool operator<(Node*) const;
+		Node* parent;              ///< 父节点
+		std::vector<Node*> child;  ///< 孩子节点
 
 		Node()
 		{
@@ -41,19 +39,18 @@ class Engine
 
  private:
 	std::shared_ptr<Board> board;
-	Board::PlayerInfo AI;
 	Node* Root;
 
-	static constexpr double UCB_C = 1.414;
-	const int ExecuteTimes = 4000;
-	const int SimulationMaxDepth = 20;
-	int PopTimes = 0;
+	static constexpr double UCB_C = 1.414; ///< UCB公式中的常数
+	const int ExecuteTimes = 5000;         ///< 搜索执行次数
+	const int SimulationMaxDepth = 20;     ///< 模拟时模拟深度
+	int PopTimes = 0;                      ///< 复原需要的撤回次数
 
  public:
-	explicit Engine(std::shared_ptr<Board>, Board::PlayerInfo);
+	explicit Engine(std::shared_ptr<Board>);
 	~Engine();
-	Board::OP Search();
-	bool mcts = false;
+	Board::OP Search();     ///< 执行搜索
+	bool MCTS = false;      ///< 当前落子决策是否采用了蒙特卡洛数搜索算法
 
  private:
 	/**
@@ -64,7 +61,13 @@ class Engine
 	static double ucb(Node*);
 
 	/**
-	 * @brief 循环执行
+	 * @brief 比较两个节点的UCB值
+	 * @return T/F
+	 */
+	static bool cmp(Node*, Node*);
+
+	/**
+	 * @brief 循环执行的子结构
 	 */
 	void Execute();
 
@@ -118,7 +121,6 @@ class Engine
 	static void Normalize(Node*);
 
 	void Destroy(Node*&);
-
 };
 
 #endif //GOBANG__ENGINE_H_

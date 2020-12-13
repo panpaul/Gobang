@@ -145,12 +145,12 @@ Board::Result Board::checkWin(const Board::OP& op, double& value)
 		  ban3 = true;
 		  score[0] = cnt1 + cnt2 - 1;
 	  }
-	  if (cnt1 + cnt2 - 1 + cnt3 >= 3 && live1 && (live2 || live3)) /* 冲三 */
+	  if (cnt1 + cnt2 - 1 + cnt3 >= 3 && live1 && live2 && live3)
 	  {
 		  ban3 = true;
 		  score[1] = cnt1 + cnt2 - 1 + cnt3;
 	  }
-	  if (cnt1 + cnt2 - 1 + cnt4 >= 3 && live2 && (live1 || live4)) /* 冲三 */
+	  if (cnt1 + cnt2 - 1 + cnt4 >= 3 && live2 && live1 && live4)
 	  {
 		  ban3 = true;
 		  score[2] = cnt1 + cnt2 - 1 + cnt4;

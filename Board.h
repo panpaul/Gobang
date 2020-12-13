@@ -69,14 +69,14 @@ class Board
 	unsigned availableOPs = kBoardSize * kBoardSize;
 
  private:
-	const double kFourBonus = 1e5;       // 活四奖励
-	const double kFourBlockBonus = 1e4;  // 死四奖励
-	const double kThreeBonus = 1e3;      // 活三奖励
-	const double kThreeBlockBonus = 1e2; // 死三奖励
-	const double kLink = 20;             // 连子系数
-	const double kLose = 0.0;            // 失败分值
+	const double kFourBonus = 1e5;       ///< 活四奖励
+	const double kFourBlockBonus = 1e4;  ///< 死四奖励
+	const double kThreeBonus = 1e3;      ///< 活三奖励
+	const double kThreeBlockBonus = 1e2; ///< 死三奖励
+	const double kLink = 20;             ///< 连子系数
+	const double kLose = 0.0;            ///< 失败分值
  public:
-	constexpr static double kWin = 1e7;             // 胜利分值
+	constexpr static double kWin = 1e7;  ///< 胜利分值
 
  public:
 	int board[kBoardSize][kBoardSize]{}; ///< 棋盘
@@ -87,7 +87,7 @@ class Board
 
 	OP GetLatestOP(); ///< 获取最后一步
 	std::vector<OP> GetAvailableOPs(PlayerInfo player); ///< 过去所有可行的下法(在已下节点周围1格子范围内)
-	unsigned GetAvailableOPs() const;
+	unsigned GetAvailableOPs() const; ///< 获取棋盘剩余落子点个数
 	void Reset(); ///< 重置
 
 	static PlayerInfo ReversePlayer(PlayerInfo);

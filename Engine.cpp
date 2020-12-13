@@ -9,10 +9,9 @@
 static std::random_device rd;
 static std::mt19937 gen(rd());
 
-Engine::Engine(std::shared_ptr<Board> board, Board::PlayerInfo ai)
+Engine::Engine(std::shared_ptr<Board> board)
 {
 	this->board = std::move(board);
-	this->AI = ai;
 	this->Root = new Node;
 }
 
@@ -21,16 +20,16 @@ double Engine::ucb(Engine::Node* node)
 	return node->reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
 }
 
-bool Engine::Node::operator<(Node* node) const
+bool Engine::cmp(Node* a, Node* b)
 {
-	return ucb(const_cast<Node*>(this)) < ucb(node);
+	return ucb(a) < ucb(b);
 }
 
 void debug(Engine::Node* r)
 {
 	double x[15][15] = {{ 0 }};
 	for (auto& y:r->child)
-		x[y->op.x][y->op.y] = y->reward;
+		x[y->op.x][y->op.y] = y->reward + 1.414 * sqrt(log(y->parent->numVisits) / y->numVisits);
 	for (int j = 0; j < 15; j++)
 	{
 		for (auto& i : x)
@@ -44,7 +43,7 @@ void debug(Engine::Node* r)
 
 Board::OP Engine::Search()
 {
-	mcts = false;
+	MCTS = false;
 
 	qDebug() << "(" << board->GetLatestOP().x << "," << board->GetLatestOP().y << ") Executed by User";
 
@@ -63,17 +62,12 @@ Board::OP Engine::Search()
 			op = selfScores[0];
 			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Self) with score:" << op.value << "\n";
 		}
-		else if (scores[0].value >= 400060)
+		else if ((scores[0].value >= Board::kWin - 20)
+			|| (scores[0].value >= 400060 && selfScores[0].value < 400060))
 		{
 			rule = true;
 			op = scores[0];
 			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Enemy) with score:" << op.value << "\n";
-		}
-		else if (selfScores[0].value >= 400060)
-		{
-			rule = true;
-			op = selfScores[0];
-			qDebug() << "(" << op.x << "," << op.y << ") Executed by Rules(Self) with score:" << op.value << "\n";
 		}
 
 		op.player = board->ReversePlayer(board->GetLatestOP().player);
@@ -111,7 +105,7 @@ Board::OP Engine::Search()
 	board->Move(this->Root->op);
 
 	qDebug() << "(" << op.x << "," << op.y << ") Executed by MCTS with score:" << op.value << "\n";
-	mcts = true;
+	MCTS = true;
 
 	// TODO 性能优化，不一定每次重新计算
 	Destroy(Root);
@@ -151,6 +145,7 @@ Engine::Node* Engine::SelectNode(Engine::Node* node)
 					return child; // 如果存在没有被模拟过的节点则返回该节点
 
 		node->fullExpanded = true; // 所有子节点都被访问过了
+		//node = GetBestChild(node);
 		node = GetRandomChild(node); // 随机选取一个节点开始扩展
 	}
 
@@ -272,10 +267,10 @@ Engine::Node* Engine::GetBestChild(Engine::Node* node)
 	if (node->child.empty())return nullptr;
 
 	std::shuffle(node->child.begin(), node->child.end(), gen);
-	std::sort(node->child.begin(), node->child.end());
+	std::sort(node->child.begin(), node->child.end(), cmp);
 
 	//auto best = (node->op.player != this->AI) ? (node->child[0]) : (node->child[node->child.size() - 1]);
-	return node->child[0];
+	return node->child[node->child.size() - 1];
 }
 
 Engine::Node* Engine::GetRandomChild(Engine::Node* node)

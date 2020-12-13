@@ -103,11 +103,11 @@ void Game::Next()
 	if (this->board->GetLatestOP().player == player)
 	{
 		// 该AI走子了
-		this->engine = new Engine(this->board, Board::ReversePlayer(player));
+		this->engine = new Engine(this->board);
 		auto search = this->engine->Search();
 		Invoke(search);
 		times++;
-		statistic += engine->mcts;
+		statistic += engine->MCTS;
 		delete engine;
 	}
 }
