@@ -3,27 +3,25 @@
 
 #include <algorithm>
 #include <random>
-#include
-<iostream>
-#include
-<iomanip>
+#include <iostream>
+#include <iomanip>
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
 
 Engine::Engine(std::shared_ptr<Board> board)
 {
-this->board = std::move(board);
-this->Root = new Node;
-normalizeMax = normalizeMin = 0;
+	this->board = std::move(board);
+	this->Root = new Node;
+	normalizeMax = normalizeMin = 0;
 }
 
 double Engine::ucb(Engine::Node* node, double nMin, double nMax)
 {
-double reward;
-if (nMin == nMax)reward = 0.5;
-else reward = (node->reward - nMin) / (nMax - nMin);
-return reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
+	double reward;
+	if (nMin == nMax)reward = 0.5;
+	else reward = (node->reward - nMin) / (nMax - nMin);
+	return reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
 }
 
 void debug(Engine::Node* r)
