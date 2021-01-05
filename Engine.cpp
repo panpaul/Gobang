@@ -15,14 +15,12 @@ Engine::Engine(std::shared_ptr<Board> board)
 	this->Root = new Node;
 }
 
-double Engine::ucb(Engine::Node* node)
+double Engine::ucb(Engine::Node* node, double nMin, double nMax)
 {
-	return node->reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
-}
-
-bool Engine::cmp(Node* a, Node* b)
-{
-	return ucb(a) < ucb(b);
+	double reward = 0;
+	if (nMin == nMax)reward = 0.5;
+	else reward = (node->reward - nMin) / (nMax - nMin);
+	return reward + UCB_C * sqrt(log(node->parent->numVisits) / node->numVisits);
 }
 
 void debug(Engine::Node* r)
@@ -96,7 +94,6 @@ Board::OP Engine::Search()
 		Execute();
 
 	// 获取最优节点
-	Normalize(Root);
 	auto* child = GetBestChild(Root);
 	assert(child != nullptr);
 	auto op = child->op;
@@ -107,7 +104,6 @@ Board::OP Engine::Search()
 	qDebug() << "(" << op.x << "," << op.y << ") Executed by MCTS with score:" << op.value << "\n";
 	MCTS = true;
 
-	// TODO 性能优化，不一定每次重新计算
 	Destroy(Root);
 
 	return op;
@@ -145,8 +141,8 @@ Engine::Node* Engine::SelectNode(Engine::Node* node)
 					return child; // 如果存在没有被模拟过的节点则返回该节点
 
 		node->fullExpanded = true; // 所有子节点都被访问过了
-		//node = GetBestChild(node);
-		node = GetRandomChild(node); // 随机选取一个节点开始扩展
+		node = GetBestChild(node); // 选取最优节点开始
+		//node = GetRandomChild(node); // 随机选取一个节点开始扩展
 	}
 
 	return node;
@@ -236,7 +232,8 @@ double Engine::Simulation(Engine::Node* node)
 			break;
 		}
 
-		op = ops[0];
+		//std::shuffle(ops.begin(), ops.end(), gen);
+		op = ops[std::uniform_int_distribution<int>(0, ops.size() - 1)(gen)];
 		value = op.value;
 
 		if (op.result != Board::kNoError)
@@ -252,7 +249,6 @@ void Engine::BackPropagate(Engine::Node* node, double reward)
 {
 	while (node != nullptr)
 	{
-		// TODO: 策略调整 平均值? 最小值? 最大值?
 		node->reward = (node->reward * node->numVisits + reward);
 		node->numVisits++;
 		node->reward /= node->numVisits;
@@ -266,8 +262,11 @@ Engine::Node* Engine::GetBestChild(Engine::Node* node)
 	if (node == nullptr)return nullptr;
 	if (node->child.empty())return nullptr;
 
+	Normalize(node);
+
 	std::shuffle(node->child.begin(), node->child.end(), gen);
-	std::sort(node->child.begin(), node->child.end(), cmp);
+	SortStruct s(this);
+	std::sort(node->child.begin(), node->child.end(), s);
 
 	//auto best = (node->op.player != this->AI) ? (node->child[0]) : (node->child[node->child.size() - 1]);
 	return node->child[node->child.size() - 1];
@@ -277,9 +276,8 @@ Engine::Node* Engine::GetRandomChild(Engine::Node* node)
 {
 	if (node == nullptr)return nullptr;
 	if (node->child.empty())return nullptr;
-
-	std::shuffle(node->child.begin(), node->child.end(), gen);
-	return node->child[0];
+	if (node->child.size() == 1)return node->child[0];
+	return node->child[std::uniform_int_distribution<int>(0, node->child.size() - 1)(gen)];
 }
 
 void Engine::Destroy(Engine::Node*& node)
@@ -303,8 +301,8 @@ Engine::~Engine()
 
 void Engine::Normalize(Engine::Node* node)
 {
-	double normalizeMin = Board::kWin;
-	double normalizeMax = 0;
+	normalizeMin = Board::kWin;
+	normalizeMax = 0;
 
 	for (auto& n:node->child)
 	{
@@ -312,11 +310,13 @@ void Engine::Normalize(Engine::Node* node)
 		normalizeMin = std::min(n->reward, normalizeMin);
 	}
 
+	/*
 	if (normalizeMin == normalizeMax)
 		for (auto& c : node->child)
 			c->reward = 0.5;
 	else
 		for (auto& c : node->child)
 			c->reward = (c->reward - normalizeMin) / (normalizeMax - normalizeMin);
+	*/
 
 }

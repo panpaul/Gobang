@@ -41,10 +41,12 @@ class Engine
 	std::shared_ptr<Board> board;
 	Node* Root;
 
-	static constexpr double UCB_C = 1.414; ///< UCB公式中的常数
-	const int ExecuteTimes = 5000;         ///< 搜索执行次数
-	const int SimulationMaxDepth = 20;     ///< 模拟时模拟深度
-	int PopTimes = 0;                      ///< 复原需要的撤回次数
+	static constexpr double UCB_C = 1.414;  ///< UCB公式中的常数
+	const int ExecuteTimes = 7500;          ///< 搜索执行次数
+	const int SimulationMaxDepth = 40;      ///< 模拟时模拟深度
+	int PopTimes = 0;                       ///< 复原需要的撤回次数
+
+	double normalizeMin, normalizeMax;
 
  public:
 	explicit Engine(std::shared_ptr<Board>);
@@ -58,13 +60,7 @@ class Engine
 	 * @param 带计算的节点
 	 * @return 该节点的ucb值
 	 */
-	static double ucb(Node*);
-
-	/**
-	 * @brief 比较两个节点的UCB值
-	 * @return T/F
-	 */
-	static bool cmp(Node*, Node*);
+	static double ucb(Node* node, double nMin, double nMax);
 
 	/**
 	 * @brief 循环执行的子结构
@@ -105,7 +101,7 @@ class Engine
 	 * @param 给定的节点
 	 * @return 最佳子节点
 	 */
-	static Node* GetBestChild(Node*);
+	Node* GetBestChild(Node*);
 
 	/**
 	 * @brief 随机选取一个孩子节点
@@ -118,9 +114,27 @@ class Engine
 	 * @brief 对孩子节点的reward进行归一化
 	 * @param 给定的节点
 	 */
-	static void Normalize(Node*);
+	void Normalize(Node*);
 
+	/**
+	 * @brief 回收内存
+	 */
 	void Destroy(Node*&);
+
+	struct SortStruct
+	{
+		// 解决sort必须要static的毛病
+		Engine* m;
+
+		explicit SortStruct(Engine* p) : m(p)
+		{
+		};
+
+		bool operator()(Node* i, Node* j) const
+		{
+			return ucb(i, m->normalizeMin, m->normalizeMax) < ucb(j, m->normalizeMin, m->normalizeMax);
+		}
+	};
 };
 
 #endif //GOBANG__ENGINE_H_

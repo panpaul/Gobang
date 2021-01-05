@@ -8,7 +8,7 @@ static std::mt19937 gen(rd());
 
 Board::Board()
 {
-	memset(board, 0, sizeof(board));
+	memset(board, kPlayerNone, sizeof(board));
 }
 
 Board::PlayerInfo Board::ReversePlayer(Board::PlayerInfo p)
