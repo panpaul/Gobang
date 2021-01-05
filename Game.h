@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file Game.h
  * @brief 游戏主类
  * @author Paul

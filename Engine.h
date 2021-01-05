@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file Engine.h
  * @brief 游戏引擎
  * @author Paul
@@ -42,8 +42,8 @@ class Engine
 	Node* Root;
 
 	static constexpr double UCB_C = 1.414;  ///< UCB公式中的常数
-	const int ExecuteTimes = 7500;          ///< 搜索执行次数
-	const int SimulationMaxDepth = 40;      ///< 模拟时模拟深度
+	const int ExecuteTimes = 8000;          ///< 搜索执行次数
+	const int SimulationMaxDepth = 50;      ///< 模拟时模拟深度
 	int PopTimes = 0;                       ///< 复原需要的撤回次数
 
 	double normalizeMin, normalizeMax;

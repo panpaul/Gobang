@@ -1,4 +1,4 @@
-#ifndef GAMEWINDOW_H
+﻿#ifndef GAMEWINDOW_H
 #define GAMEWINDOW_H
 
 #include <QMainWindow>

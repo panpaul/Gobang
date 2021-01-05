@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <random>
 #include <QDebug>
 #include "Board.h"
